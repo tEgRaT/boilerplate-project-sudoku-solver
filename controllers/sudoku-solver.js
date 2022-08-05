@@ -61,13 +61,13 @@ class SudokuSolver {
 	}
 
 	solve(puzzleString) {
-		const validateResult = this.validate(puzzleString);
-
-		if (validateResult === true) {
-			return { solution: this.solvePuzzle(puzzleString) };
-		} else {
-			return validateResult;
-		}
+		puzzleString.map((char, index) => {
+			if (char !== '.') {
+				return char;
+			} else {
+				const candidates = this.getCandidates(puzzleString, this.getCoordinates(index).row, this.getCoordinates(index).col);
+			}
+		})
 	}
 
 	getCandidates(puzzleString, row, col) {
