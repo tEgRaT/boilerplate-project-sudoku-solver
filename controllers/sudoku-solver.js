@@ -19,8 +19,10 @@ class SudokuSolver {
 			...puzzleArray[this.getRow(row)][0][this.getRegionRow(row)],
 			...puzzleArray[this.getRow(row)][1][this.getRegionRow(row)],
 			...puzzleArray[this.getRow(row)][2][this.getRegionRow(row)]
-		].includes(value)) {
-			return { valid: false, conflict: 'row' };
+		]
+			.filter(char => char !== puzzleArray[this.getRow(row)][this.getCol(column)][this.getRegionRow(row)][this.getRegionCol(column)])
+			.includes(value)) {
+			return { valid: false, conflict: ['row'] };
 		} else {
 			return { valid: true };
 		}
@@ -39,8 +41,10 @@ class SudokuSolver {
 			puzzleArray[2][this.getCol(column)][0][this.getRegionCol(column)],
 			puzzleArray[2][this.getCol(column)][1][this.getRegionCol(column)],
 			puzzleArray[2][this.getCol(column)][2][this.getRegionCol(column)]
-		].includes(value)) {
-			return { valid: false, conflict: 'column' };
+		]
+		.filter(char => char !== puzzleArray[this.getRow(row)][this.getCol(column)][this.getRegionRow(row)][this.getRegionCol(column)])
+		.includes(value)) {
+			return { valid: false, conflict: ['column'] };
 		} else {
 			return { valid: true };
 		}
@@ -53,21 +57,43 @@ class SudokuSolver {
 			...puzzleArray[this.getRow(row)][this.getCol(column)][0],
 			...puzzleArray[this.getRow(row)][this.getCol(column)][1],
 			...puzzleArray[this.getRow(row)][this.getCol(column)][2]
-		].includes(value)) {
-			return { valid: false, conflict: 'region' };
+		]
+			.filter(char => char !== puzzleArray[this.getRow(row)][this.getCol(column)][this.getRegionRow(row)][this.getRegionCol(column)])
+			.includes(value)) {
+			return { valid: false, conflict: ['region'] };
 		} else {
 			return { valid: true };
 		}
 	}
 
 	solve(puzzleString) {
-		puzzleString.map((char, index) => {
-			if (char !== '.') {
-				return char;
+		if (!/\./g.test(puzzleString)) {
+			if (this.salGood(puzzleString)) {
+				return { solution: puzzleString };
 			} else {
-				const candidates = this.getCandidates(puzzleString, this.getCoordinates(index).row, this.getCoordinates(index).col);
+				return { "error": "Puzzle cannot be solved" };
 			}
-		})
+		}
+
+		let tempPuzzleString = puzzleString;
+
+		for (let i = 0; i < 81; i++) {
+			if (tempPuzzleString[i] === '.') {
+				const { row, col } = this.getCoordinates(i);
+
+				const candidates = this.getCandidates(tempPuzzleString, row, col);
+
+        if (candidates.length === 0) {
+          return { "error": "Puzzle cannot be solved" };
+        }
+
+				if (candidates.length === 1) {
+					tempPuzzleString = tempPuzzleString.substr(0, i) + candidates[0] + tempPuzzleString.substr(i + 1);
+				}
+			}
+		}
+
+		return this.solve(tempPuzzleString);
 	}
 
 	getCandidates(puzzleString, row, col) {
@@ -76,16 +102,34 @@ class SudokuSolver {
 		for (let i = 1; i <= 9; i++) {
 			const value = i.toString();
 
-			if (
-				this.checkRowPlacement(puzzleString, row, col, value).valid &&
-				this.checkColPlacement(puzzleString, row, col, value).valid &&
-				this.checkRegionPlacement(puzzleString, row, col, value).valid
-			) {
-				results.push(value);
-			}
+			if (this.checkRowColRegion(puzzleString, row, col, value)) results.push(value);
 		}
 
 		return results;
+	}
+
+	salGood(puzzleString) {
+		for (let i = 0; i < 9; i++) {
+			for (let j = 1; j <= 9; j++) {
+				if (this.getCandidates(puzzleString, String.fromCharCode(65 + i), j.toString()).length !== 1) {
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	checkRowColRegion(puzzleString, row, col, value) {
+		if (
+			this.checkRowPlacement(puzzleString, row, col, value).valid &&
+			this.checkColPlacement(puzzleString, row, col, value).valid &&
+			this.checkRegionPlacement(puzzleString, row, col, value).valid
+		) {
+			return true;
+		}
+
+		return false;
 	}
 
 	getCoordinates(index) {
@@ -124,4 +168,3 @@ class SudokuSolver {
 }
 
 module.exports = SudokuSolver;
-
